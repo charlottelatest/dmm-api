@@ -8,6 +8,10 @@ before do
   content_type :json
 end
 
+get '/' do
+  'Welcome'
+end
+
 get '/casts_info' do
   dmm_url = "https://actress.dmm.co.jp"
   cast_encoded = CGI.escape params['cast']
