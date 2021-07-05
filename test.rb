@@ -12,7 +12,13 @@ require 'json'
 # buffer = URI.open(url).read
 # result = JSON.parse(buffer)
 # p result[0]["uid"]
-cast_name = CGI.escape "七瀬アリス"
-libre_fanza_url = "https://www.libredmm.com/actresses?fuzzy=#{cast_name}"
-doc = Nokogiri::HTML(URI.open(libre_fanza_url))
-p doc.css(".card-title > a").first.attr('href').split("/")[2]
+cast_name = "栄川乃亜"
+escaped_cast_name = CGI.escape cast_name
+libre_fanza_url = "https://www.libredmm.com/actresses?fuzzy=#{escaped_cast_name}"
+doc = Nokogiri::HTML(URI.open(libre_fanza_url), nil, Encoding::UTF_8.to_s)
+# p doc.css(".card-title > a").first.attr('href').split("/")[2]
+fanza_cast_code = doc.css(".card-title > a").each do |item|
+  break item.attr('href').split("/")[2] if item.text === cast_name
+end
+
+p fanza_cast_code

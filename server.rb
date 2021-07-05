@@ -35,11 +35,13 @@ end
 # end
 # "https://www.dmm.co.jp/mono/dvd/-/list/=/article=actress/format=dvd/id=1044864/sort=review_rank/"
 get '/casts_info' do
-
-  cast_encoded = CGI.escape params['cast']
+  cast_name = params['cast']
+  cast_encoded = CGI.escape cast_name
   libre_fanza_url = "https://www.libredmm.com/actresses?fuzzy=#{cast_encoded}"
-  doc = Nokogiri::HTML(URI.open(libre_fanza_url))
-  fanza_cast_code = doc.css(".card-title > a").first.attr('href').split("/")[2]  
+  doc = Nokogiri::HTML(URI.open(libre_fanza_url), nil, Encoding::UTF_8.to_s)
+  fanza_cast_code = doc.css(".card-title > a").each do |item|
+    break item.attr('href').split("/")[2] if item.text === cast_name
+  end
   dmm_url = "https://actress.dmm.co.jp"
   url = "#{dmm_url}/-/detail/=/actress_id=#{fanza_cast_code}/"
   doc = Nokogiri::HTML(URI.open(url, 'Cookie' => 'age_check_done=1'))
