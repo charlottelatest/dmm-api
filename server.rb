@@ -34,6 +34,31 @@ end
 #   end
 # end
 # "https://www.dmm.co.jp/mono/dvd/-/list/=/article=actress/format=dvd/id=1044864/sort=review_rank/"
+get '/lf_cast_name' do
+  begin
+    vid_id = params['vid_id']
+    libre_fanza_url = "https://www.libredmm.com/movies/#{vid_id}"
+    doc = Nokogiri::HTML(URI.open(libre_fanza_url), nil, Encoding::UTF_8.to_s)
+    cast_items = doc.css("body > main > dl > dd:nth-child(2) > div > div.card.actress > div > h6 > a")
+    casts_name = if cast_items.count > 1
+    cast_stack = []
+    cast_items.each do |cast_item|
+      cast_stack.push(cast_item.text)
+    end
+    cast_stack.join("、")
+  else
+    cast_items.text
+  end
+  {
+    lf_cast_name: casts_name
+  }.to_json
+  rescue => exception
+    {
+      reason: exception
+    }.to_json
+  end
+end
+
 get '/casts_info' do
   cast_name = params['cast']
   cast_encoded = CGI.escape cast_name
