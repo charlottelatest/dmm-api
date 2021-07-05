@@ -35,19 +35,31 @@ end
 # end
 # "https://www.dmm.co.jp/mono/dvd/-/list/=/article=actress/format=dvd/id=1044864/sort=review_rank/"
 get '/casts_info' do
-  dmm_url = "https://actress.dmm.co.jp"
+
   cast_encoded = CGI.escape params['cast']
-  url = "#{dmm_url}/-/search/=/searchstr=#{cast_encoded}/"
+  libre_fanza_url = "https://www.libredmm.com/actresses?fuzzy=#{cast_encoded}"
+  doc = Nokogiri::HTML(URI.open(libre_fanza_url))
+  fanza_cast_code = doc.css(".card-title > a").first.attr('href').split("/")[2]  
+  dmm_url = "https://actress.dmm.co.jp"
+  url = "#{dmm_url}/-/detail/=/actress_id=#{fanza_cast_code}/"
   doc = Nokogiri::HTML(URI.open(url, 'Cookie' => 'age_check_done=1'))
-  cast_info_page_url = "#{dmm_url}#{doc.css('.p-list-actress__link').attr('href')}"
+  cast_info_page_url = url
   cast_doc = Nokogiri::HTML(URI.open(cast_info_page_url, 'Cookie' => 'age_check_done=1'))
 
   # May not find
   cast_id = cast_info_page_url.split("actress_id=")[1].split("/")[0]
   img_url = cast_doc.css('#main-contens img').attr('src')
-  birth_date = cast_doc.css('.p-list-profile__description:nth-child(2)').text.strip
+  birth_date = if cast_doc.css('.p-list-profile__description:nth-child(2)').text.strip != "---"
+    birth_date = cast_doc.css('.p-list-profile__description:nth-child(2)').text.strip
+    year = birth_date.split("年")[0]
+    month = birth_date.split("年")[1].split("月")[0]
+    day = birth_date.split("年")[1].split("月")[1].split("日")[0]
+    "#{year}/#{month}/#{day}"
+  else
+    "---"
+  end
   spec = cast_doc.css('.p-list-profile__description:nth-child(8)').text.strip.split.join.split("cm").join
-  height = spec.scan(/B\d{2}/)[0].nil? ? "---" : spec.scan(/T\d{3}/)[0][1..3]
+  height = spec.scan(/T\d{2}/)[0].nil? ? "---" : spec.scan(/T\d{3}/)[0][1..3]
   bust = spec.scan(/B\d{2,3}/)[0].nil? ? "---" : spec.scan(/B\d{2,3}/)[0][1..3]
   cup = spec.scan(/\([A-Z]{1}/)[0].nil? ? "自行目測" : spec.scan(/\([A-Z]{1}/)[0][1]
   waist = spec.scan(/W\d{2}/)[0].nil? ? "---" : spec.scan(/W\d{2}/)[0][1..2]
