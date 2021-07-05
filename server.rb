@@ -68,6 +68,7 @@ get '/casts_info' do
   hip = spec.scan(/H\d{2}/)[0].nil? ? "---" : spec.scan(/H\d{2}/)[0][1..2]
   {
     cast_info_page_url: cast_info_page_url,
+    fanza_cast_code: fanza_cast_code,
     img_url: img_url,
     birth_date: birth_date,
     height: height,
