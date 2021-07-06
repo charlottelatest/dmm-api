@@ -12,45 +12,68 @@ get '/' do
   'Welcome'
 end
 
-# get '/trailers' do
-#   begin
-#     vid_id_encoded = CGI.escape params['vid_id']
-#     url = "https://javdb.com/videos/search_autocomplete.json?q=#{vid_id_encoded}"
-#     buffer = URI.open(url).read
-#     result = JSON.parse(buffer)
-#     uid = result[0]["uid"]
-#     jav_db_url = "https://javdb.com/v/#{uid}"
-#     p jav_db_url
-#     doc = Nokogiri::HTML(URI.open(jav_db_url, 'Cookie' => 'over18=1'))
-#     {
-#       tailer_url: "https:#{doc.css("#preview-video source").attr('src').text}"
-#     }.to_json
-#   rescue => exception
-#     {
-#       reason: exception,
-#       error_msg: "Trailer does't exists.",
-#       status_code: "404"
-#     }.to_json
-#   end
-# end
-# "https://www.dmm.co.jp/mono/dvd/-/list/=/article=actress/format=dvd/id=1044864/sort=review_rank/"
-get '/lf_cast_name' do
+get '/trailers' do
+  begin
+    vid_id_encoded = CGI.escape params['vid_id']
+    javdb_url = "https://javdb.com/videos/search_autocomplete.json?q=#{vid_id_encoded}"
+    buffer = URI.open(javdb_url).read
+    result = JSON.parse(buffer)
+    uid = result[0]["uid"]
+    javdb_specific_url = "https://javdb.com/v/#{uid}"
+    javdb_specific_page_doc = Nokogiri::HTML(URI.open(javdb_specific_url, 'Cookie' => 'over18=1'))
+    trailer_video_url = "https:#{javdb_specific_page_doc.css("#preview-video source").attr('src').text}"
+    {
+      trailer_video_url: trailer_video_url
+    }.to_json
+  rescue => exception
+    {
+      reason: exception,
+      error_msg: "Trailer does't exists.",
+      status_code: "404"
+    }.to_json
+  end
+end
+
+get '/lf_video_metadata' do
   begin
     vid_id = params['vid_id']
     libre_fanza_url = "https://www.libredmm.com/movies/#{vid_id}"
     doc = Nokogiri::HTML(URI.open(libre_fanza_url), nil, Encoding::UTF_8.to_s)
-    cast_items = doc.css("body > main > dl > dd:nth-child(2) > div > div.card.actress > div > h6 > a")
+
+    # Fetch cover url:
+    video_cover_url = doc.css(".img-fluid").attr('src')
+
+    # Fetch video title:
+    video_title = doc.css("body > main > h1 > span:nth-child(2)").text
+
+    # Fetch released date:
+    released_at = doc.css("body > main > div > div.col-md-4 > dl > dd:nth-child(4)").text
+
+    # Fetch trailer video url:
+    javdb_url = "https://javdb.com/videos/search_autocomplete.json?q=#{vid_id}"
+    uid = JSON.parse(URI.open(javdb_url).read)[0]["uid"]
+    javdb_specific_page_url = "https://javdb.com/v/#{uid}"
+    javdb_specific_page_doc = Nokogiri::HTML(URI.open(javdb_specific_page_url, 'Cookie' => 'over18=1'))
+    trailer_video_url = "https:#{javdb_specific_page_doc.css("#preview-video source").attr('src').text}"
+
+    # Fetch casts information.
+    cast_items = doc.css(".card-title a")
+    p cast_items.count
     casts_name = if cast_items.count > 1
-    cast_stack = []
-    cast_items.each do |cast_item|
-      cast_stack.push(cast_item.text)
+      cast_stack = []
+      cast_items.each do |cast_item|
+        cast_stack.push(cast_item.text)
+      end
+      cast_stack.join("、")
+    else
+      cast_items.text
     end
-    cast_stack.join("、")
-  else
-    cast_items.text
-  end
   {
-    lf_cast_name: casts_name
+    video_cover_url: video_cover_url,
+    video_title: video_title,
+    casts_name: casts_name,
+    released_at: released_at,
+    trailer_video_url: trailer_video_url
   }.to_json
   rescue => exception
     {
@@ -88,7 +111,7 @@ get '/casts_info' do
   spec = cast_doc.css('.p-list-profile__description:nth-child(8)').text.strip.split.join.split("cm").join
   height = spec.scan(/T\d{2}/)[0].nil? ? "---" : spec.scan(/T\d{3}/)[0][1..3]
   bust = spec.scan(/B\d{2,3}/)[0].nil? ? "---" : spec.scan(/B\d{2,3}/)[0][1..3]
-  cup = spec.scan(/\([A-Z]{1}/)[0].nil? ? "自行目測" : spec.scan(/\([A-Z]{1}/)[0][1]
+  cup = spec.scan(/\([A-Z]{1}/)[0].nil? ? "---" : spec.scan(/\([A-Z]{1}/)[0][1]
   waist = spec.scan(/W\d{2}/)[0].nil? ? "---" : spec.scan(/W\d{2}/)[0][1..2]
   hip = spec.scan(/H\d{2}/)[0].nil? ? "---" : spec.scan(/H\d{2}/)[0][1..2]
   {

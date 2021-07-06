@@ -15,3 +15,4 @@ gem "open-uri", "~> 0.1.0"
 gem "cgi", "~> 0.2.0"
 
 gem "puma", "~> 5.3"
+
