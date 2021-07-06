@@ -12,28 +12,6 @@ get '/' do
   'Welcome'
 end
 
-get '/trailers' do
-  begin
-    vid_id_encoded = CGI.escape params['vid_id']
-    javdb_url = "https://javdb.com/videos/search_autocomplete.json?q=#{vid_id_encoded}"
-    buffer = URI.open(javdb_url).read
-    result = JSON.parse(buffer)
-    uid = result[0]["uid"]
-    javdb_specific_url = "https://javdb.com/v/#{uid}"
-    javdb_specific_page_doc = Nokogiri::HTML(URI.open(javdb_specific_url, 'Cookie' => 'over18=1'))
-    trailer_video_url = "https:#{javdb_specific_page_doc.css("#preview-video source").attr('src').text}"
-    {
-      trailer_video_url: trailer_video_url
-    }.to_json
-  rescue => exception
-    {
-      reason: exception,
-      error_msg: "Trailer does't exists.",
-      status_code: "404"
-    }.to_json
-  end
-end
-
 get '/lf_video_metadata' do
   begin
     vid_id = params['vid_id']
@@ -54,8 +32,11 @@ get '/lf_video_metadata' do
     uid = JSON.parse(URI.open(javdb_url).read)[0]["uid"]
     javdb_specific_page_url = "https://javdb.com/v/#{uid}"
     javdb_specific_page_doc = Nokogiri::HTML(URI.open(javdb_specific_page_url, 'Cookie' => 'over18=1'))
-    trailer_video_url = "https:#{javdb_specific_page_doc.css("#preview-video source").attr('src').text}"
-
+    trailer_video_url = if javdb_specific_page_doc.css("#preview-video source").attr('src').nil?
+      ''
+    else
+      "https:#{javdb_specific_page_doc.css("#preview-video source").attr('src').text}"
+    end
     # Fetch casts information.
     cast_items = doc.css(".card-title a")
     p cast_items.count
@@ -77,7 +58,7 @@ get '/lf_video_metadata' do
   }.to_json
   rescue => exception
     {
-      reason: exception
+      exception: exception
     }.to_json
   end
 end
