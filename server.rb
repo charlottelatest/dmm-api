@@ -40,7 +40,8 @@ get '/lf_video_metadata' do
     # Fetch casts information.
     cast_items = doc.css(".card-title a")
     p cast_items.count
-    casts_name = if cast_items.count > 1
+
+    casts_name = (if cast_items.count > 1
       cast_stack = []
       cast_items.each do |cast_item|
         cast_stack.push(cast_item.text)
@@ -48,7 +49,9 @@ get '/lf_video_metadata' do
       cast_stack.join("、")
     else
       cast_items.text
-    end
+    end)
+
+    casts_name = "暫無演員資訊" if casts_name.empty?
   {
     video_cover_url: video_cover_url,
     video_title: video_title,
